@@ -124,7 +124,9 @@
 				.then(d => {
 					// console.log('data', d)
 					// dbg = dbg + 'd.fields.customfield_10077:' + d.fields.customfield_10077 + '<br/>';
-					// updateDbg(dbg) ;
+					StrClients = d.fields.customfield_10077 ;
+					StrClientsToArrayClients();
+					DispArrayClients();
 				});
 
 
