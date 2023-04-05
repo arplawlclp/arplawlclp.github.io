@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<script src="https://assets.sr-cloud.connect.adaptavistlabs.com/public/js/bridge.js"></script>
+
+<style type="text/css">
+	#result {
+	  border: 1px dotted #ccc;
+	  padding: 3px;
+	}
+	#result ul {
+	  list-style-type: none;
+	  padding: 0;
+	  margin: 0;
+	}
+	#result ul li {
+	  padding: 5px 0;
+	}
+	#result ul li:hover {
+	  background: #eee;
+	}
+</style>
+
+
+<form autocomplete="off">
+	<div id="debug"></div>
+	<input type="text" name="q" id="q" onKeyUp="showResults(this.value)" />
+	<div id="result"></div>
+</form>
+
+
+<script>
+	function updateDbg(s) {
+		let res = document.getElementById("debug");
+		res.innerHTML = res.innerHTML + s;
+	}
+
+	function showResults(val) {
+		res = document.getElementById("result");
+		res.innerHTML = '';
+		if (val == '') {
+			return;
+		}
+		let list = '';
+		let baseurl = 'https://espaceclients.arpege.fr/HubsiExterne/api/Clients/GetClients?Name=';
+
+		fetch(baseurl + val, { method: "GET", headers: { "ApiKey": "f58ce29d-acd9-4d35-9a4b-8cd039d1f2c7" } }).then(
+			function (response) { return response.json();}).then(
+				function (data) {
+					for (i=0; i<data.length; i++) {
+						list += '<li>' + data[i].name + '</li>';
+					}
+					res.innerHTML = '<ul>' + list + '</ul>';
+					return true;
+				}).catch(function (err) {
+					console.warn('Something went wrong.', err);
+					return false;
+				});
+	}
+	
+	function afterLoad() {
+
+		let dbg = '' ;
+		if (window.AdaptavistBridge) {
+			dbg = dbg + 'window.AdaptavistBridge est défini !' + '<br/>' ;
+
+			window.AdaptavistBridge.request({
+				url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
+				type: 'GET'
+			})
+				.then(d => {
+					console.log('data', d)
+					dbg = dbg + 'd.fields.customfield_10077:' + d.fields.customfield_10077 + '<br/>';
+					updateDbg(dbg) ;
+				});
+
+
+		} else {
+			dbg = dbg + 'window.AdaptavistBridge non def' + '<br/>' ;
+		}
+		if (window.AdaptavistBridgeContext) {
+			dbg = dbg + 'window.AdaptavistBridgeContext est défini ! issueKey : ' + 
+				window.AdaptavistBridgeContext.context.issueKey + '<br/>' ;
+		} else {
+			dbg = dbg + 'window.AdaptavistBridgeContext non def' + '<br/>' ;
+		}
+		updateDbg(dbg) ;
+		
+	} ;
+		
+	window.onload = afterLoad();
+	
+
+
+</script>
+
+
+
+
+<!--
+https://scriptrunner-docs.connect.adaptavist.com/jiracloud/script-fragments.html
+
+The bridge is automatically injected into the page as a global variable, which can be accessed via window.AdaptavistBridge and window.AdaptavistBridgeContext.
+
+requestOptions = {
+    url: `/rest/api/2/issue/${AdaptavistBridgeContext.context.issueKey}`,
+    type: 'GET'
+};
+
+{location, issueKey, projectKey}
+
+
+AdaptavistBridge.request({
+    url: `/rest/api/2/issue/${AdaptavistBridgeContext.context.issueKey}`,
+    type: 'GET'
+})
+    .then(d => {
+        console.log('data', d)
+    });
+
+
+// Récupérer le field
+-->
+
+<!--
+<input type="text"></input>
+<input type="button" onclick="onButtonClicked()">click me</input>
+-->
+
+</body>
+</html>
