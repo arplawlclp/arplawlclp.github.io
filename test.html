@@ -5,6 +5,20 @@
 <script src="https://assets.sr-cloud.connect.adaptavistlabs.com/public/js/bridge.js"></script>
 
 <style type="text/css">
+	body {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+		font-size: 14px
+	}
+	.spbx {
+		border: 1px solid darkgrey; 
+		padding-left: 3px; 
+		padding-right: 3px; 
+		background: lightblue;
+		}
+	.spd {
+		margin: 3px; 
+	}
+
 	#result {
 	  border: 1px dotted #ccc;
 	  padding: 3px;
@@ -22,21 +36,56 @@
 	}
 </style>
 
+<div id="debug"></div>
 
-<form autocomplete="off">
-	<div id="debug"></div>
-	<input type="text" name="q" id="q" onKeyUp="showResults(this.value)" />
-	<div id="result"></div>
-</form>
+<div id="zoneclients">
+	<div>CLIENTS <span class="spbx" onclick="ClicShowAjouterCli()" id="btnshowajoutercli">ajouter</span><span class="spbx" onclick="ClicCloseAjouterCli()" id="btncloseajoutercli" style="visibility:collapse">X</span></div>
+
+	<div id="formclient" style="display:none">
+		<form autocomplete="off" >
+			<input type="text" name="q" id="q" onKeyUp="showResultsDebounced()" />
+			<div id="result"></div>
+		</form>
+	</div>
+
+	<div id="containerclients">
+		<!--
+		<div id="cli_0" class="spd">
+		MAIRIE DE NANTES <span class="spbx">X</span>
+		<div>
+		<div id="cli_1" class="spd">
+		MAIRIE DE LORIENT <span  class="spbx">X</span>
+		<div>
+		-->
+	</div>
+</div>
 
 
 <script>
+	function showResultsDebounced() {
+		debounce(() => showResults(), 400);
+	}
+	
+	let timeoutId = null;
+	function debounce(callback, wait) {
+		window.clearTimeout(timeoutId);
+		timeoutId = window.setTimeout(() => {
+			callback.apply(null, null);
+		}, wait);
+	}
+
 	function updateDbg(s) {
 		let res = document.getElementById("debug");
 		res.innerHTML = res.innerHTML + s;
 	}
 
-	function showResults(val) {
+	let lastsearch = '' ;
+	let lastsearchres = undefined;
+	function showResults() {
+		let val = document.getElementById("q").value;
+		if (val==lastsearch) { return ; }
+		lastsearch = val ;
+		let nbMaxResults = 10;
 		res = document.getElementById("result");
 		res.innerHTML = '';
 		if (val == '') {
@@ -48,10 +97,13 @@
 		fetch(baseurl + val, { method: "GET", headers: { "ApiKey": "f58ce29d-acd9-4d35-9a4b-8cd039d1f2c7" } }).then(
 			function (response) { return response.json();}).then(
 				function (data) {
+					let s = '' ;
+					lastsearchres = data;
 					for (i=0; i<data.length; i++) {
-						list += '<li>' + data[i].name + '</li>';
+						list += '<li onclick="ClicAddCli('+i+')">' + data[i].name + '</li>';
+						if (i==(nbMaxResults-1)) { s = "chargement limité à 10 .." ; break ;}
 					}
-					res.innerHTML = '<ul>' + list + '</ul>';
+					res.innerHTML = '<ul>' + list + '</ul>' + s ;
 					return true;
 				}).catch(function (err) {
 					console.warn('Something went wrong.', err);
@@ -63,16 +115,16 @@
 
 		let dbg = '' ;
 		if (window.AdaptavistBridge) {
-			dbg = dbg + 'window.AdaptavistBridge est défini !' + '<br/>' ;
+			// dbg = dbg + 'window.AdaptavistBridge est défini !' + '<br/>' ;
 
 			window.AdaptavistBridge.request({
 				url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
 				type: 'GET'
 			})
 				.then(d => {
-					console.log('data', d)
-					dbg = dbg + 'd.fields.customfield_10077:' + d.fields.customfield_10077 + '<br/>';
-					updateDbg(dbg) ;
+					// console.log('data', d)
+					// dbg = dbg + 'd.fields.customfield_10077:' + d.fields.customfield_10077 + '<br/>';
+					// updateDbg(dbg) ;
 				});
 
 
@@ -80,15 +132,70 @@
 			dbg = dbg + 'window.AdaptavistBridge non def' + '<br/>' ;
 		}
 		if (window.AdaptavistBridgeContext) {
-			dbg = dbg + 'window.AdaptavistBridgeContext est défini ! issueKey : ' + 
-				window.AdaptavistBridgeContext.context.issueKey + '<br/>' ;
+			// dbg = dbg + 'window.AdaptavistBridgeContext est défini ! issueKey : ' + window.AdaptavistBridgeContext.context.issueKey + '<br/>' ;
 		} else {
 			dbg = dbg + 'window.AdaptavistBridgeContext non def' + '<br/>' ;
 		}
 		updateDbg(dbg) ;
+		StrClientsToArrayClients();
+		DispArrayClients();
 		
 	} ;
+	
+	let StrClients = "MAIRIE D'ANNECY; MAIRIE DE SAINT-EGREVE" ;
+	let ArrayClients = [];
+	function StrClientsToArrayClients() {
+		ArrayClients = StrClients.split(';');
+	}
+	function ArrayClientsToStrClients() {
+		StrClients = ArrayClients.join(';');
+	}
+	function DispArrayClients() {
+		let res = document.getElementById("containerclients");
 		
+		let ih = '' ;
+		let template = '<div id="cli_0" class="spd">MAIRIE DE NANTES <span class="spbx">X</span><div>' ;
+	
+		for (var i = 0; i < ArrayClients.length; i++) {
+			var nomcli = ArrayClients[i];
+			let template = '<div id="cli_'+i+'" class="spd">'+nomcli+' <span class="spbx" onclick="ClicDeleteCli('+i+')">X</span></div>' ;
+			ih = ih+template ;
+		}
+		res.innerHTML = ih;
+	}
+	function ClicDeleteCli(idxCli) {
+		ArrayClients.splice(idxCli, 1) ;
+		DispArrayClients();
+	}
+	function ClicShowAjouterCli() {
+		document.getElementById("containerclients").style.visibility = 'collapse';
+		document.getElementById("btnshowajoutercli").style.visibility = 'collapse';
+
+		res = document.getElementById("formclient").style.display = 'block';
+		document.getElementById("btncloseajoutercli").style.visibility = 'visible';
+		document.getElementById("q").focus();
+	}
+	function ClicHideAjouterCli() {
+		document.getElementById("containerclients").style.visibility = 'visible';
+		document.getElementById("btnshowajoutercli").style.visibility = 'visible';
+
+		res = document.getElementById("formclient").style.display = 'none';
+		document.getElementById("btncloseajoutercli").style.visibility = 'collapse';
+		document.getElementById("result").innerHTML = '';
+		document.getElementById("q").value = '';
+	}
+	function ClicCloseAjouterCli() {
+		ClicHideAjouterCli();
+	}
+
+	function ClicAddCli(idxCli) {
+		ArrayClients.push(lastsearchres[idxCli].name);
+		DispArrayClients();
+		ClicHideAjouterCli();
+	}
+
+	
+	
 	window.onload = afterLoad();
 	
 
@@ -100,33 +207,25 @@
 
 <!--
 https://scriptrunner-docs.connect.adaptavist.com/jiracloud/script-fragments.html
+https://developer.atlassian.com/cloud/jira/software/jsapi/request/
 
-The bridge is automatically injected into the page as a global variable, which can be accessed via window.AdaptavistBridge and window.AdaptavistBridgeContext.
-
-requestOptions = {
-    url: `/rest/api/2/issue/${AdaptavistBridgeContext.context.issueKey}`,
-    type: 'GET'
-};
-
-{location, issueKey, projectKey}
-
-
-AdaptavistBridge.request({
-    url: `/rest/api/2/issue/${AdaptavistBridgeContext.context.issueKey}`,
-    type: 'GET'
-})
-    .then(d => {
-        console.log('data', d)
-    });
+- OK Récupérer le field : 
+TODO
+- OK Transformer la valeur "cli1;cli2" en tableau de clients
+- OK Afficher le tableau de clients
+- OK Afficher un moyen de supprimer des clients du tableau
+- OK Limiter le nombre de résultats de recherche
+- OK Ne lancer la recherche qu'après un certain nombre de caractères
+- OK Lors d'un clic sur un résultat de recherche : 
+	- OK fermer les résultats
+	- OK ajouter le résultat au tableau
+	- OK Vider le champ de saisie
+- ajouter 2 boutons pour valider/annuler la modal
+- OK mettre le focus dans le champ
 
 
-// Récupérer le field
 -->
 
-<!--
-<input type="text"></input>
-<input type="button" onclick="onButtonClicked()">click me</input>
--->
 
 </body>
 </html>
