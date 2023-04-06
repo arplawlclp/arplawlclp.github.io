@@ -34,16 +34,35 @@
 	#result ul li:hover {
 	  background: #eee;
 	}
+	
+	#loading {
+	  display: none;
+	  width: 10px;
+	  height: 10px;
+	  border: 3px solid rgba(255,255,255,.3);
+	  border-radius: 50%;
+	  border-top-color: lightgray;
+	  animation: spin 1s ease-in-out infinite;
+	  -webkit-animation: spin 1s ease-in-out infinite;
+	}
+
+	@keyframes spin {
+	  to { -webkit-transform: rotate(360deg); }
+	}
+	@-webkit-keyframes spin {
+	  to { -webkit-transform: rotate(360deg); }
+	}	
+	
 </style>
 
 <div id="debug"></div>
 
-<div id="zoneclients">
+<div id="zoneclients" style="min-height:200px">
 	<div>CLIENTS <span class="spbx" onclick="ClicShowAjouterCli()" id="btnshowajoutercli">ajouter</span><span class="spbx" onclick="ClicCloseAjouterCli()" id="btncloseajoutercli" style="visibility:collapse">X</span></div>
 
-	<div id="formclient" style="display:none">
+	<div id="formclient" style="display:none; padding-top: 5px">
 		<form autocomplete="off" >
-			<input type="text" name="q" id="q" onKeyUp="showResultsDebounced()" />
+			<input type="text" name="q" id="q" onKeyUp="showResultsDebounced()" /> <div id="loading"></div>
 			<div id="result"></div>
 		</form>
 	</div>
@@ -62,11 +81,20 @@
 
 
 <script>
+	let lastsearch = '' ;
+	let lastsearchres = undefined;
+	let timeoutId = null;
+	// let StrClients = "MAIRIE D'ANNECY; MAIRIE DE SAINT-EGREVE" ;
+	let StrClients = "" ;
+	let ArrayClients = [];
+	
+	let editMode = false ;
+	let changesOccured = false ;
+	
 	function showResultsDebounced() {
 		debounce(() => showResults(), 400);
 	}
 	
-	let timeoutId = null;
 	function debounce(callback, wait) {
 		window.clearTimeout(timeoutId);
 		timeoutId = window.setTimeout(() => {
@@ -79,8 +107,6 @@
 		res.innerHTML = res.innerHTML + s;
 	}
 
-	let lastsearch = '' ;
-	let lastsearchres = undefined;
 	function showResults() {
 		let val = document.getElementById("q").value;
 		if (val==lastsearch) { return ; }
@@ -94,9 +120,12 @@
 		let list = '';
 		let baseurl = 'https://espaceclients.arpege.fr/HubsiExterne/api/Clients/GetClients?Name=';
 
+		document.getElementById("loading").style.display = 'inline-block';
+		res.style.display = 'none';
 		fetch(baseurl + val, { method: "GET", headers: { "ApiKey": "f58ce29d-acd9-4d35-9a4b-8cd039d1f2c7" } }).then(
 			function (response) { return response.json();}).then(
 				function (data) {
+					document.getElementById("loading").style.display = 'none';
 					let s = '' ;
 					lastsearchres = data;
 					for (i=0; i<data.length; i++) {
@@ -104,59 +133,72 @@
 						if (i==(nbMaxResults-1)) { s = "chargement limité à 10 .." ; break ;}
 					}
 					res.innerHTML = '<ul>' + list + '</ul>' + s ;
+					
+					if (data.length<1)
+						res.style.display = 'none';
+					else
+						res.style.display = 'block';
+
 					return true;
 				}).catch(function (err) {
+					document.getElementById("loading").style.display = 'none';
 					console.warn('Something went wrong.', err);
 					return false;
 				});
 	}
 	
 	function afterLoad() {
-
 		let dbg = '' ;
 		if (window.AdaptavistBridge) {
-			// dbg = dbg + 'window.AdaptavistBridge est défini !' + '<br/>' ;
-
-			window.AdaptavistBridge.request({
-				url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
-				type: 'GET'
-			})
-				.then(d => {
-					// console.log('data', d)
-					// dbg = dbg + 'd.fields.customfield_10077:' + d.fields.customfield_10077 + '<br/>';
-					StrClients = d.fields.customfield_10077 ;
-					StrClientsToArrayClients();
-					DispArrayClients();
-				});
-
-
+			LoadFieldClients();
 		} else {
 			dbg = dbg + 'window.AdaptavistBridge non def' + '<br/>' ;
 		}
-		if (window.AdaptavistBridgeContext) {
-			// dbg = dbg + 'window.AdaptavistBridgeContext est défini ! issueKey : ' + window.AdaptavistBridgeContext.context.issueKey + '<br/>' ;
-		} else {
+
+		if (!window.AdaptavistBridgeContext) {
 			dbg = dbg + 'window.AdaptavistBridgeContext non def' + '<br/>' ;
 		}
 		updateDbg(dbg) ;
-		StrClientsToArrayClients();
-		DispArrayClients();
-		
+		// StrClientsToArrayClients();
+		// DispArrayClients();
 	} ;
 	
-	let StrClients = "MAIRIE D'ANNECY; MAIRIE DE SAINT-EGREVE" ;
-	let ArrayClients = [];
+	function LoadFieldClients() {
+		window.AdaptavistBridge.request({
+			url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
+			type: 'GET'
+		})
+		.then(d => {
+			StrClients = d.fields.customfield_10077 ;
+			StrClientsToArrayClients();
+			DispArrayClients();
+		});
+	}
+	function SaveFieldClients() {
+		if (!window.AdaptavistBridge) 
+			return ;
+		
+		ArrayClientsToStrClients() ;
+		
+		window.AdaptavistBridge.request({
+			url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
+			type: 'PUT',
+			data: {fields: { customfield_10077 : StrClients } },
+		})
+		.then(d => {
+			console.log('sauvé');
+		});
+	}
+	
 	function StrClientsToArrayClients() {
-		ArrayClients = StrClients.split(';');
+		ArrayClients = StrClients.split(';').filter(s => s!==null && s!==undefined && s!=='').map(s=>s.trim());
 	}
 	function ArrayClientsToStrClients() {
 		StrClients = ArrayClients.join(';');
 	}
 	function DispArrayClients() {
 		let res = document.getElementById("containerclients");
-		
 		let ih = '' ;
-		let template = '<div id="cli_0" class="spd">MAIRIE DE NANTES <span class="spbx">X</span><div>' ;
 	
 		for (var i = 0; i < ArrayClients.length; i++) {
 			var nomcli = ArrayClients[i];
@@ -167,24 +209,40 @@
 	}
 	function ClicDeleteCli(idxCli) {
 		ArrayClients.splice(idxCli, 1) ;
+		SaveFieldClients();
 		DispArrayClients();
 	}
-	function ClicShowAjouterCli() {
-		document.getElementById("containerclients").style.visibility = 'collapse';
-		document.getElementById("btnshowajoutercli").style.visibility = 'collapse';
+	function ShowHideControls() {
+		if (editMode) {
+			document.getElementById("containerclients").style.visibility = 'collapse';
+			document.getElementById("btnshowajoutercli").style.visibility = 'collapse';
 
-		res = document.getElementById("formclient").style.display = 'block';
-		document.getElementById("btncloseajoutercli").style.visibility = 'visible';
+			document.getElementById("formclient").style.display = 'block';
+			document.getElementById("btncloseajoutercli").style.visibility = 'visible';
+		} else {
+			document.getElementById("containerclients").style.visibility = 'visible';
+			document.getElementById("btnshowajoutercli").style.visibility = 'visible';
+
+			document.getElementById("formclient").style.display = 'none';
+			document.getElementById("btncloseajoutercli").style.visibility = 'collapse';
+		}
+		if (lastsearchres == undefined) {
+			document.getElementById("result").style.display = 'none';
+		}
+		// let editMode = false ;
+		// let changesOccured = false ;
+	}
+	function ClicShowAjouterCli() {
 		document.getElementById("q").focus();
+		editMode = true ;
+		ShowHideControls();
 	}
 	function ClicHideAjouterCli() {
-		document.getElementById("containerclients").style.visibility = 'visible';
-		document.getElementById("btnshowajoutercli").style.visibility = 'visible';
-
-		res = document.getElementById("formclient").style.display = 'none';
-		document.getElementById("btncloseajoutercli").style.visibility = 'collapse';
 		document.getElementById("result").innerHTML = '';
 		document.getElementById("q").value = '';
+		lastsearchres = undefined;
+		editMode = false ;
+		ShowHideControls();
 	}
 	function ClicCloseAjouterCli() {
 		ClicHideAjouterCli();
@@ -192,6 +250,7 @@
 
 	function ClicAddCli(idxCli) {
 		ArrayClients.push(lastsearchres[idxCli].name);
+		SaveFieldClients();
 		DispArrayClients();
 		ClicHideAjouterCli();
 	}
