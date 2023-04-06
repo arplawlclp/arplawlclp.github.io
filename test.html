@@ -187,7 +187,7 @@
 		window.AdaptavistBridge.request({
 			url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
 			type: 'PUT',
-			data: { update: { customfield_10077 : [ { "set" : StrClients} ] } },
+			data: JSON.stringify(   { update: { customfield_10077 : [ { "set" : StrClients} ] } }    ),
 		})
 		.then(d => {
 			console.log('sauvé');
