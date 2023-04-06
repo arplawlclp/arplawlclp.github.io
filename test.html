@@ -90,6 +90,7 @@
 	
 	let editMode = false ;
 	let changesOccured = false ;
+	let issue = undefined ;
 	
 	function showResultsDebounced() {
 		debounce(() => showResults(), 400);
@@ -169,6 +170,7 @@
 			type: 'GET'
 		})
 		.then(d => {
+			issue = d;
 			StrClients = d.fields.customfield_10077 ;
 			StrClientsToArrayClients();
 			DispArrayClients();
@@ -179,11 +181,12 @@
 			return ;
 		
 		ArrayClientsToStrClients() ;
-		
+		issue.fields.customfield_10077 = StrClients;
+
 		window.AdaptavistBridge.request({
 			url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
 			type: 'PUT',
-			data: {fields: { customfield_10077 : StrClients } },
+			data: issue,
 		})
 		.then(d => {
 			console.log('sauvé');
@@ -191,7 +194,7 @@
 	}
 	
 	function StrClientsToArrayClients() {
-		ArrayClients = StrClients.split(';').filter(s => s!==null && s!==undefined && s!=='').map(s=>s.trim());
+		ArrayClients = StrClients.split(';').filter(s => s!==null && s!==undefined && s!=='').map(s=>s.trim()).filter(s => s!=='');
 	}
 	function ArrayClientsToStrClients() {
 		StrClients = ArrayClients.join(';');
