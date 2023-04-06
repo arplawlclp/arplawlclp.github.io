@@ -182,11 +182,12 @@
 		
 		ArrayClientsToStrClients() ;
 		issue.fields.customfield_10077 = StrClients;
+		// { update: { customfield_10077 : [ { "set" : StrClients} ] }
 
 		window.AdaptavistBridge.request({
 			url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
 			type: 'PUT',
-			data: issue,
+			data: { update: { customfield_10077 : [ { "set" : StrClients} ] } },
 		})
 		.then(d => {
 			console.log('sauvé');
