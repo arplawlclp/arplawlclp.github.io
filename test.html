@@ -171,7 +171,7 @@
 		})
 		.then(d => {
 			issue = d;
-			StrClients = d.fields.customfield_10077 ;
+			StrClients = d.fields.customfield_10124 ;
 			StrClientsToArrayClients();
 			DispArrayClients();
 		});
@@ -181,13 +181,13 @@
 			return ;
 		
 		ArrayClientsToStrClients() ;
-		issue.fields.customfield_10077 = StrClients;
-		// { update: { customfield_10077 : [ { "set" : StrClients} ] }
+		issue.fields.customfield_10124 = StrClients;
+		// { update: { customfield_10124 : [ { "set" : StrClients} ] }
 
 		window.AdaptavistBridge.request({
 			url: `/rest/api/2/issue/${window.AdaptavistBridgeContext.context.issueKey}`,
 			type: 'PUT',
-			data: JSON.stringify(   { update: { customfield_10077 : [ { "set" : StrClients} ] } }    ),
+			data: JSON.stringify(   { update: { customfield_10124 : [ { "set" : StrClients} ] } }    ),
 		})
 		.then(d => {
 			console.log('sauvé');
