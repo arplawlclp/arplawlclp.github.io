@@ -174,7 +174,11 @@
 			StrClients = d.fields.customfield_10124 ;
 			StrClientsToArrayClients();
 			DispArrayClients();
-		});
+		},
+		derr => {
+			console.log(derr) ;
+		}
+		);
 	}
 	function SaveFieldClients() {
 		if (!window.AdaptavistBridge) 
