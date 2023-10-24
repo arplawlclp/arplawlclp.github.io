@@ -130,7 +130,7 @@
 					let s = '' ;
 					lastsearchres = data;
 					for (i=0; i<data.length; i++) {
-						list += '<li onclick="ClicAddCli('+i+')">' + data[i].name + '</li>';
+						list += '<li onclick="ClicAddCli('+i+')">' + data[i].Name + '</li>';
 						if (i==(nbMaxResults-1)) { s = "chargement limité à 10 .." ; break ;}
 					}
 					res.innerHTML = '<ul>' + list + '</ul>' + s ;
@@ -172,6 +172,7 @@
 		.then(d => {
 			issue = d;
 			StrClients = d.fields.customfield_10124 ;
+			if (StrClients===null) StrClients = '' ;
 			StrClientsToArrayClients();
 			DispArrayClients();
 		},
@@ -257,7 +258,7 @@
 	}
 
 	function ClicAddCli(idxCli) {
-		ArrayClients.push(lastsearchres[idxCli].name);
+		ArrayClients.push(lastsearchres[idxCli].Name);
 		SaveFieldClients();
 		DispArrayClients();
 		ClicHideAjouterCli();
