@@ -112,7 +112,7 @@
 		let val = document.getElementById("q").value;
 		if (val==lastsearch) { return ; }
 		lastsearch = val ;
-		let nbMaxResults = 10;
+		let nbMaxResults = 30;
 		res = document.getElementById("result");
 		res.innerHTML = '';
 		if (val == '') {
@@ -131,7 +131,7 @@
 					lastsearchres = data;
 					for (i=0; i<data.length; i++) {
 						list += '<li onclick="ClicAddCli('+i+')">' + data[i].Name + '</li>';
-						if (i==(nbMaxResults-1)) { s = "chargement limité à 10 .." ; break ;}
+						if (i==(nbMaxResults-1)) { s = "chargement limité à 30 .." ; break ;}
 					}
 					res.innerHTML = '<ul>' + list + '</ul>' + s ;
 					
