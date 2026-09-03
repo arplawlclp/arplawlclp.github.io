@@ -205,7 +205,8 @@ function GetClientsAsync(name) {
 					let s = '' ;
 					lastsearchres = data;
 					for (i=0; i<data.length; i++) {
-						list += '<li onclick="ClicAddCli('+i+')">' + data[i].Name + '</li>';
+						//list += '<li onclick="ClicAddCli('+i+')">' + data[i].Name + '</li>';
+						list += '<li onclick="ClicAddCli('+i+')">' + data[i] + '</li>';
 						if (i==(nbMaxResults-1)) { s = "chargement limité à 30 .." ; break ;}
 					}
 					res.innerHTML = '<ul>' + list + '</ul>' + s ;
